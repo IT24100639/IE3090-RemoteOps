@@ -1,0 +1,17 @@
+#ifndef REMOTEOPS_CONFIG_H
+#define REMOTEOPS_CONFIG_H
+
+#define REG_NUMBER "IT24100639"
+#define DEFAULT_PORT 9410
+#define SID_TAG "SID:9360"
+#define AUTH_TOKEN "OPS-0639"
+
+#define LOG_FILE "remoteops_IT24100639.log"
+#define STORAGE_DIR "./agentfiles/IT24100639"
+
+#define MAX_LINE 4096
+#define FILE_CHUNK_SIZE 4096
+#define MAX_FILE_SIZE (100ULL * 1024ULL * 1024ULL)
+#define MONITOR_INTERVAL_SEC 2
+
+#endif
