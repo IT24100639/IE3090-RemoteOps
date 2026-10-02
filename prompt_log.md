@@ -83,3 +83,17 @@ and provided compilation and testing instructions.
 Validation: I compiled and ran the supplied code in CentOS.
 Unauthenticated SYSINFO was rejected. Authenticated SYSINFO
 returned system statistics with SID:9360. QUIT succeeded.
+
+## LISTPROC code assistance — 3 October 2026
+
+Prompt context: Continue the assignment using complete code
+that can be copied and pasted.
+
+AI assistance: Supplied the complete updated Agent code with
+a LISTPROC handler reading /proc, a 20-process snapshot limit,
+bounded response construction, and process-name sanitisation.
+Provided compilation and authentication test instructions.
+
+Validation: I compiled and ran the code in CentOS.
+LISTPROC was rejected before authentication and returned process
+names/PIDs after authentication. SYSINFO and QUIT also succeeded.

@@ -1,4 +1,6 @@
 #include <arpa/inet.h>
+#include <ctype.h>
+#include <dirent.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -34,7 +36,6 @@ static int send_sysinfo(int fd)
         return reply(fd, "ERR 007 SYSINFO_FAILED");
     }
 
-    /* Linux stores load averages as fixed-point values. */
     double cpu_load =
         (double)information.loads[0] / 65536.0;
 
@@ -52,6 +53,118 @@ static int send_sysinfo(int fd)
 
     if (length < 0 || (size_t)length >= sizeof(message)) {
         return reply(fd, "ERR 007 SYSINFO_FAILED");
+    }
+
+    return reply(fd, message);
+}
+
+/* Numeric directory names in /proc represent process IDs. */
+static int is_pid_directory(const char *name)
+{
+    size_t length = strlen(name);
+
+    if (length == 0 || length > 20) {
+        return 0;
+    }
+
+    for (size_t i = 0; i < length; ++i) {
+        if (!isdigit((unsigned char)name[i])) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+/* Return a bounded snapshot of up to 20 readable processes. */
+static int send_process_list(int fd)
+{
+    DIR *directory = opendir("/proc");
+
+    if (directory == NULL) {
+        return reply(fd, "ERR 008 LISTPROC_FAILED");
+    }
+
+    /* Leave room for the SID and newline added by reply(). */
+    char message[MAX_LINE - 64] = "OK PROCS ";
+    size_t used = strlen(message);
+    unsigned count = 0;
+    struct dirent *entry;
+
+    while (count < 20 &&
+           (entry = readdir(directory)) != NULL) {
+        if (!is_pid_directory(entry->d_name)) {
+            continue;
+        }
+
+        char path[128];
+        int path_length = snprintf(path, sizeof(path),
+                                   "/proc/%.20s/comm",
+                                   entry->d_name);
+
+        if (path_length < 0 ||
+            (size_t)path_length >= sizeof(path)) {
+            continue;
+        }
+
+        FILE *process_file = fopen(path, "r");
+
+        /* A process may exit before its file is opened. */
+        if (process_file == NULL) {
+            continue;
+        }
+
+        char name[64];
+        char *result = fgets(name, sizeof(name), process_file);
+        fclose(process_file);
+
+        if (result == NULL) {
+            continue;
+        }
+
+        name[strcspn(name, "\r\n")] = '\0';
+
+        if (name[0] == '\0') {
+            continue;
+        }
+
+        /* Keep names safe for a comma-separated protocol line. */
+        for (size_t i = 0; name[i] != '\0'; ++i) {
+            unsigned char character = (unsigned char)name[i];
+
+            if (!(isalnum(character) ||
+                  character == '_' ||
+                  character == '-' ||
+                  character == '.')) {
+                name[i] = '_';
+            }
+        }
+
+        char item[128];
+        int item_length = snprintf(item, sizeof(item),
+                                   "%s%s/%.20s",
+                                   count == 0 ? "" : ",",
+                                   name, entry->d_name);
+
+        if (item_length < 0 ||
+            (size_t)item_length >= sizeof(item)) {
+            continue;
+        }
+
+        if ((size_t)item_length >= sizeof(message) - used) {
+            break;
+        }
+
+        memcpy(message + used, item, (size_t)item_length);
+        used += (size_t)item_length;
+        message[used] = '\0';
+        ++count;
+    }
+
+    closedir(directory);
+
+    if (count == 0) {
+        return reply(fd, "ERR 008 LISTPROC_FAILED");
     }
 
     return reply(fd, message);
@@ -90,6 +203,11 @@ static void *handle_client(void *argument)
             response = "ERR 003 AUTH_REQUIRED";
         } else if (strcmp(line, "SYSINFO") == 0) {
             if (send_sysinfo(fd) == -1) {
+                break;
+            }
+            continue;
+        } else if (strcmp(line, "LISTPROC") == 0) {
+            if (send_process_list(fd) == -1) {
                 break;
             }
             continue;

@@ -48,3 +48,17 @@ Testing: SYSINFO before authentication returned ERR 003 AUTH_REQUIRED.
 After authentication, it returned OK SYSINFO 0.08 3443.56 12671 SID:9360.
 QUIT returned OK BYE SID:9360.
 Compilation completed without warnings using the selected GCC flags.
+
+## LISTPROC implementation — 3 October 2026
+
+Added an authenticated LISTPROC handler that reads process names
+from /proc/<pid>/comm. It returns a snapshot of up to 20 readable
+processes as comma-separated name/PID entries.
+
+The response is bounded to fit one protocol line with the SID.
+Special characters in names are replaced with underscores.
+Processes that exit before their files can be read are skipped.
+
+Testing: LISTPROC before authentication was rejected.
+After authentication, it returned 20 process entries with SID:9360.
+SYSINFO and QUIT still worked. Compilation produced no warnings.
