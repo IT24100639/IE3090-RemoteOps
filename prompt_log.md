@@ -70,3 +70,16 @@ Also helped interpret the screenshots and draft this diary entry.
 Validation: I ran the commands in CentOS. Five established connections,
 five successful authentication responses, and five BYE responses were
 observed.
+
+## SYSINFO code assistance — 3 October 2026
+
+User prompt: "can u give me the code fully , then i can copy paste directly and fully"
+
+AI assistance: Supplied the complete updated agent_639.c with a
+SYSINFO handler using Linux sysinfo(), retaining authentication
+and threaded client handling. Explained the returned values
+and provided compilation and testing instructions.
+
+Validation: I compiled and ran the supplied code in CentOS.
+Unauthenticated SYSINFO was rejected. Authenticated SYSINFO
+returned system statistics with SID:9360. QUIT succeeded.

@@ -36,3 +36,15 @@ socket and authentication state, so waiting for one client's command
 does not stop the Agent from handling other clients.
 Detached threads release their thread resources when they finish.
 Screenshots were saved separately for the report.
+
+## SYSINFO implementation — 3 October 2026
+
+Added SYSINFO using Linux sysinfo().
+The response reports the one-minute load average, used RAM in MB,
+and uptime in seconds. Used RAM is total RAM minus free RAM,
+including memory used for caching. CPU load is not a percentage.
+
+Testing: SYSINFO before authentication returned ERR 003 AUTH_REQUIRED.
+After authentication, it returned OK SYSINFO 0.08 3443.56 12671 SID:9360.
+QUIT returned OK BYE SID:9360.
+Compilation completed without warnings using the selected GCC flags.
