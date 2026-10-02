@@ -23,3 +23,16 @@ Authentication token: OPS-0639
 
 My next step is to implement the TCP connection between
 the Agent and Controller.
+
+## Five-client concurrency test — 3 October 2026
+
+I tested five Controller processes connected to the Agent at the same time.
+The ss command showed five established TCP connections on port 9410.
+All five Controllers received OK AUTHENTICATED SID:9360.
+After 180 seconds, each sent QUIT and received OK BYE SID:9360.
+
+The Agent uses one detached pthread per client. Each client has its own
+socket and authentication state, so waiting for one client's command
+does not stop the Agent from handling other clients.
+Detached threads release their thread resources when they finish.
+Screenshots were saved separately for the report.

@@ -57,3 +57,16 @@ how to paste, save and check the file using nano and cat.
 
 Checks or changes:
 I checked the entry against the steps I completed.
+
+## Concurrency test guidance — 3 October 2026
+
+Prompt summary: Continue the assignment with clear step-by-step commands.
+
+AI assistance: Provided commands to launch five existing C Controllers
+in the background, authenticate each, keep connections open for 180
+seconds, inspect connections using ss, and read their saved output.
+Also helped interpret the screenshots and draft this diary entry.
+
+Validation: I ran the commands in CentOS. Five established connections,
+five successful authentication responses, and five BYE responses were
+observed.
