@@ -1,0 +1,12 @@
+# Compiled programs
+/agent_639
+/controller_639
+*.o
+
+# File transfer test data
+/agentfiles/
+/downloads/
+/sample.txt
+
+# Runtime log
+/remoteops_IT24100639.log
