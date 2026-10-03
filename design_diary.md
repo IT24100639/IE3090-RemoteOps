@@ -62,3 +62,20 @@ Processes that exit before their files can be read are skipped.
 Testing: LISTPROC before authentication was rejected.
 After authentication, it returned 20 process entries with SID:9360.
 SYSINFO and QUIT still worked. Compilation produced no warnings.
+
+## EXEC implementation — 4 October 2026
+
+Added authenticated EXEC handlers for DATE, UPTIME, DISKFREE,
+HOSTNAME and WHOAMI using C system functions.
+Exact command names are required; extra arguments are rejected.
+No shell is invoked.
+
+DATE uses the Agent's local time. UPTIME reports seconds.
+DISKFREE reports space available to the Agent user on the project
+filesystem. HOSTNAME reports the system hostname. WHOAMI reports
+the Agent's effective user using a reentrant user lookup.
+
+Testing: EXEC before authentication was rejected.
+All five allowed commands returned OK EXEC_RESULT with SID:9360.
+EXEC LS, EXEC DATE extra and EXEC DATE;WHOAMI were rejected.
+SYSINFO and QUIT continued to work.

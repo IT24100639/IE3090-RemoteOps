@@ -1,13 +1,19 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include <arpa/inet.h>
 #include <ctype.h>
 #include <dirent.h>
 #include <errno.h>
 #include <pthread.h>
+#include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/statvfs.h>
 #include <sys/sysinfo.h>
+#include <sys/utsname.h>
+#include <time.h>
 #include <unistd.h>
 
 #include "remoteops_config.h"
@@ -17,6 +23,7 @@
 static int reply(int fd, const char *message)
 {
     char response[MAX_LINE];
+
     int length = snprintf(response, sizeof(response),
                           "%s %s\n", message, SID_TAG);
 
@@ -46,6 +53,7 @@ static int send_sysinfo(int fd)
         (double)information.mem_unit / (1024.0 * 1024.0);
 
     char message[256];
+
     int length = snprintf(message, sizeof(message),
                           "OK SYSINFO %.2f %.2f %ld",
                           cpu_load, used_memory_mb,
@@ -98,6 +106,7 @@ static int send_process_list(int fd)
         }
 
         char path[128];
+
         int path_length = snprintf(path, sizeof(path),
                                    "/proc/%.20s/comm",
                                    entry->d_name);
@@ -141,6 +150,7 @@ static int send_process_list(int fd)
         }
 
         char item[128];
+
         int item_length = snprintf(item, sizeof(item),
                                    "%s%s/%.20s",
                                    count == 0 ? "" : ",",
@@ -165,6 +175,117 @@ static int send_process_list(int fd)
 
     if (count == 0) {
         return reply(fd, "ERR 008 LISTPROC_FAILED");
+    }
+
+    return reply(fd, message);
+}
+
+/* Only exact allowlisted names are accepted. */
+static int send_exec_result(int fd, const char *command)
+{
+    char output[512];
+    int length = -1;
+
+    if (strcmp(command, "DATE") == 0) {
+        time_t now = time(NULL);
+        struct tm local_time;
+
+        if (now == (time_t)-1 ||
+            localtime_r(&now, &local_time) == NULL) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+
+        if (strftime(output, sizeof(output),
+                     "%Y-%m-%d %H:%M:%S %z",
+                     &local_time) == 0) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+    } else if (strcmp(command, "UPTIME") == 0) {
+        struct sysinfo information;
+
+        if (sysinfo(&information) == -1) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+
+        length = snprintf(output, sizeof(output),
+                          "%ld seconds", information.uptime);
+
+        if (length < 0 || (size_t)length >= sizeof(output)) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+    } else if (strcmp(command, "DISKFREE") == 0) {
+        struct statvfs information;
+
+        /* Space available to this user on the project filesystem. */
+        if (statvfs(".", &information) == -1) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+
+        double available_mb =
+            (double)information.f_bavail *
+            (double)information.f_frsize /
+            (1024.0 * 1024.0);
+
+        length = snprintf(output, sizeof(output),
+                          "%.2f MB available on project filesystem",
+                          available_mb);
+
+        if (length < 0 || (size_t)length >= sizeof(output)) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+    } else if (strcmp(command, "HOSTNAME") == 0) {
+        struct utsname information;
+
+        if (uname(&information) == -1) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+
+        length = snprintf(output, sizeof(output),
+                          "%s", information.nodename);
+
+        if (length < 0 || (size_t)length >= sizeof(output)) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+    } else if (strcmp(command, "WHOAMI") == 0) {
+        struct passwd user;
+        struct passwd *result = NULL;
+        char user_buffer[16384];
+
+        /* Reentrant lookup supports concurrent client threads. */
+        int error = getpwuid_r(geteuid(), &user,
+                              user_buffer, sizeof(user_buffer),
+                              &result);
+
+        if (error != 0 || result == NULL) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+
+        length = snprintf(output, sizeof(output),
+                          "%s", result->pw_name);
+
+        if (length < 0 || (size_t)length >= sizeof(output)) {
+            return reply(fd, "ERR 009 EXEC_FAILED");
+        }
+    } else {
+        return reply(fd, "ERR 002 COMMAND_NOT_ALLOWED");
+    }
+
+    /* Prevent output from introducing extra protocol lines. */
+    for (size_t i = 0; output[i] != '\0'; ++i) {
+        unsigned char character = (unsigned char)output[i];
+
+        if (character < 32 || character == 127) {
+            output[i] = ' ';
+        }
+    }
+
+    char message[640];
+
+    length = snprintf(message, sizeof(message),
+                      "OK EXEC_RESULT %s", output);
+
+    if (length < 0 || (size_t)length >= sizeof(message)) {
+        return reply(fd, "ERR 009 EXEC_FAILED");
     }
 
     return reply(fd, message);
@@ -211,11 +332,15 @@ static void *handle_client(void *argument)
                 break;
             }
             continue;
+        } else if (strncmp(line, "EXEC ", 5) == 0) {
+            if (send_exec_result(fd, line + 5) == -1) {
+                break;
+            }
+            continue;
         } else if (strcmp(line, "QUIT") == 0) {
             reply(fd, "OK BYE");
             break;
         } else {
-            /* Remaining command handlers will be added later. */
             response = "ERR 002 COMMAND_NOT_ALLOWED";
         }
 
@@ -325,6 +450,7 @@ int main(void)
         *argument = client_fd;
 
         pthread_t thread;
+
         error = pthread_create(&thread, &attributes,
                                handle_client, argument);
 

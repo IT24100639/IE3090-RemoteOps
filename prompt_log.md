@@ -97,3 +97,17 @@ Provided compilation and authentication test instructions.
 Validation: I compiled and ran the code in CentOS.
 LISTPROC was rejected before authentication and returned process
 names/PIDs after authentication. SYSINFO and QUIT also succeeded.
+
+## EXEC code assistance — 4 October 2026
+
+User prompt: "tell me very clearly. give me the whole code to copy paste"
+
+AI assistance: Supplied complete Agent code containing the existing
+features and five allowlisted EXEC handlers implemented through C
+system functions. Provided instructions for compilation, running
+the Agent and Controller in separate SSH tabs, and testing.
+
+Validation: I ran the code in CentOS. All five allowed commands
+succeeded after authentication. Unauthenticated EXEC, unknown
+commands, extra arguments and a semicolon command were rejected.
+SYSINFO and QUIT also succeeded.
