@@ -79,3 +79,8 @@ Testing: EXEC before authentication was rejected.
 All five allowed commands returned OK EXEC_RESULT with SID:9360.
 EXEC LS, EXEC DATE extra and EXEC DATE;WHOAMI were rejected.
 SYSINFO and QUIT continued to work.
+
+## 2026-10-04 — TCP file transfers
+Implemented authenticated PUT and GET with newline-delimited headers and exact-length binary payloads. The Controller calculates upload sizes and saves downloads in ./downloads. Agent files are stored in ./agentfiles/IT24100639. Transfers use 4096-byte chunks with a 100 MiB limit. Simple filenames prevent path traversal. Temporary files are renamed after complete transfers; interrupted transfers remove temporary files. Rejected PUT requests close the session to prevent payload bytes being interpreted as commands.
+
+Tested unauthenticated GET, successful authentication, upload and download of a 44-byte text file, missing-file handling and QUIT. SHA-256 hashes matched for the original, Agent copy and downloaded copy.

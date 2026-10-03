@@ -111,3 +111,9 @@ Validation: I ran the code in CentOS. All five allowed commands
 succeeded after authentication. Unauthenticated EXEC, unknown
 commands, extra arguments and a semicolon command were rejected.
 SYSINFO and QUIT also succeeded.
+
+## 2026-10-04 — File transfer implementation
+Prompt: "dont tell like this , just give me the whole code every time. then i can copy paste it . and tell me where i need to paste it"
+Context: Requested complete copy-paste code and clear terminal instructions while adding PUT and GET.
+AI assistance: Provided an exact-byte receive helper, file transfer handlers, complete Agent and Controller replacements, and testing instructions.
+Validation: Compiled without reported errors and tested authentication protection, upload, download, missing-file handling and QUIT. Verified matching SHA-256 hashes for all three file copies.

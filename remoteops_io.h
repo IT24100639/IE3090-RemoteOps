@@ -6,7 +6,7 @@
 #include <sys/socket.h>
 
 /* Keep sending until every byte has been sent. */
-static int send_all(int fd, const void *data, size_t length)
+static inline int send_all(int fd, const void *data, size_t length)
 {
     const unsigned char *bytes = data;
     size_t sent = 0;
@@ -14,20 +14,52 @@ static int send_all(int fd, const void *data, size_t length)
     while (sent < length) {
         ssize_t result = send(fd, bytes + sent,
                               length - sent, MSG_NOSIGNAL);
+
         if (result < 0 && errno == EINTR) {
             continue;
         }
         if (result <= 0) {
             return -1;
         }
+
         sent += (size_t)result;
     }
+
+    return 0;
+}
+
+/* Receive exactly length bytes.
+   Return 0 on success or -1 on error/premature disconnect. */
+static inline int recv_exact(int fd, void *data, size_t length)
+{
+    unsigned char *bytes = data;
+    size_t received = 0;
+
+    while (received < length) {
+        ssize_t result = recv(fd, bytes + received,
+                              length - received, 0);
+
+        if (result < 0 && errno == EINTR) {
+            continue;
+        }
+        if (result < 0) {
+            return -1;
+        }
+        if (result == 0) {
+            errno = ECONNRESET;
+            return -1;
+        }
+
+        received += (size_t)result;
+    }
+
     return 0;
 }
 
 /* Return 1 for a line, 0 for clean EOF, -1 for an error,
-   or -2 if the line exceeds the buffer capacity. */
-static int recv_line(int fd, char *line, size_t capacity)
+   or -2 if the line exceeds the buffer capacity.
+   Reading one byte at a time leaves file payload bytes untouched. */
+static inline int recv_line(int fd, char *line, size_t capacity)
 {
     size_t used = 0;
 
@@ -55,6 +87,7 @@ static int recv_line(int fd, char *line, size_t capacity)
         if (used >= capacity - 1) {
             return -2;
         }
+
         line[used++] = character;
     }
 }
