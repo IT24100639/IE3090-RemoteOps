@@ -145,3 +145,12 @@ Validation:
 Ran the script on CentOS using Python 3.12.13 against the C Agent.
 The oversized-upload, interrupted-upload cleanup and subsequent
 SYSINFO checks all passed. Screenshot 17 records the output.
+
+## 2026-10-04 - TCP stream test script
+Tool: ChatGPT / Codex.
+AI generated the complete test_tcp_stream.py script and execution
+instructions as part of the continuing assignment guidance.
+The script tests split commands, multiple commands in one send,
+and binary file payload boundaries with subsequent commands.
+I ran it against the C Agent on CentOS. All three checks passed,
+and the output was captured in screenshot 18.

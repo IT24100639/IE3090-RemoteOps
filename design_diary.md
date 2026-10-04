@@ -112,3 +112,15 @@ received SYSINFO afterward. All three scripted checks passed.
 
 Python is only a testing tool; the Agent and Controller remain C programs.
 Evidence: screenshots 14, 15, 16 and 17.
+
+## 2026-10-04 - TCP stream framing tests
+Ran test_tcp_stream.py against the C Agent. AUTH and SYSINFO worked
+when their command text was split across separate sends. SYSINFO,
+EXEC WHOAMI and QUIT sent together produced separate ordered replies.
+
+An 8192-byte binary upload was sent together with its PUT header and
+a following SYSINFO command. The stored bytes matched the original.
+GET followed by SYSINFO and QUIT returned the correct file header,
+exact binary payload and separate command responses. All three tests
+passed. The script removed its own temporary test file afterward.
+Evidence: screenshot 18.
