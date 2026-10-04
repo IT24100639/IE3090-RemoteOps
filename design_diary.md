@@ -87,3 +87,6 @@ Tested unauthenticated GET, successful authentication, upload and download of a 
 
 ## 2026-10-04 - UDP monitoring
 Added a UDP monitoring worker for each TCP client session. The Agent sends SYSINFO datagrams every two seconds to the client's requested UDP port. The Controller displays these updates while accepting commands. Tested monitoring updates, MONITOR STOP, and a TCP SYSINFO command after stopping. The displayed responses included SID:9360.
+
+## 2026-10-04 - Build automation
+Added Makefile_639 to compile both programs with C11, compiler warnings, optimisation, and pthread support. Ran the clean and build targets successfully. Running make again reported that both programs were up to date.
