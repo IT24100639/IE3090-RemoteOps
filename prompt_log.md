@@ -154,3 +154,11 @@ The script tests split commands, multiple commands in one send,
 and binary file payload boundaries with subsequent commands.
 I ran it against the C Agent on CentOS. All three checks passed,
 and the output was captured in screenshot 18.
+
+## 2026-10-04 - Monitoring session tests
+Tool: ChatGPT / Codex.
+AI generated the complete test_monitor_sessions.py script and
+instructions to test five connected clients, two independent UDP
+monitoring sessions, MONITOR STOP, QUIT and TCP disconnect cleanup.
+I ran the script against the C Agent on CentOS. All checks passed.
+Screenshot 19 records the results.

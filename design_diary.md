@@ -124,3 +124,18 @@ GET followed by SYSINFO and QUIT returned the correct file header,
 exact binary payload and separate command responses. All three tests
 passed. The script removed its own temporary test file afterward.
 Evidence: screenshot 18.
+
+## 2026-10-04 - Monitoring session isolation and cleanup
+Ran test_monitor_sessions.py with five authenticated TCP clients
+connected at the same time. Each client successfully received SYSINFO.
+Two sessions received valid UDP statistics on separate listener ports.
+
+MONITOR STOP stopped only the requesting session's monitoring, and
+its TCP connection still answered SYSINFO. Restarting monitoring and
+then sending QUIT stopped that session's UDP traffic while the other
+session continued. Closing the second TCP connection without QUIT
+also stopped its monitoring. The remaining three clients still worked.
+
+The script discarded queued UDP datagrams and checked for silence
+over three seconds, longer than the two-second monitoring interval.
+All checks passed. Evidence: screenshot 19.
