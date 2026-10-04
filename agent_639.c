@@ -19,8 +19,9 @@
 #include "remoteops_config.h"
 #include "remoteops_io.h"
 #include "remoteops_files.h"
+#include "remoteops_monitor.h"
 
-/* Every response ends with the personalised SID and newline. */
+/* Every TCP response ends with the personalised SID and newline. */
 static int reply(int fd, const char *message)
 {
     char response[MAX_LINE];
@@ -259,11 +260,20 @@ static int send_exec_result(int fd, const char *command)
     return reply(fd, message);
 }
 
-/* Each client has its own thread and authentication state. */
+/* Each client has its own authentication and monitoring state. */
 static void *handle_client(void *argument)
 {
     int fd = *(int *)argument;
     free(argument);
+
+    struct monitor_state monitoring;
+    int error = monitor_init(&monitoring);
+
+    if (error != 0) {
+        reply(fd, "ERR 012 MONITOR_FAILED");
+        close(fd);
+        return NULL;
+    }
 
     int authenticated = 0;
     char line[MAX_LINE];
@@ -286,6 +296,7 @@ static void *handle_client(void *argument)
                 response = "OK AUTHENTICATED";
             } else {
                 authenticated = 0;
+                monitor_stop(&monitoring);
                 response = "ERR 001 AUTH_FAILED";
             }
         } else if (!authenticated) {
@@ -293,7 +304,6 @@ static void *handle_client(void *argument)
                 break;
             }
 
-            /* Unauthorised PUT may already have payload bytes. */
             if (strncmp(line, "PUT ", 4) == 0) {
                 break;
             }
@@ -324,7 +334,22 @@ static void *handle_client(void *argument)
                 break;
             }
             continue;
+        } else if (strncmp(line, "MONITOR START ", 14) == 0) {
+            unsigned short udp_port;
+
+            if (parse_udp_port(line + 14, &udp_port) == -1) {
+                response = "ERR 013 INVALID_UDP_PORT";
+            } else if (monitor_start(&monitoring,
+                                     fd, udp_port) == -1) {
+                response = "ERR 012 MONITOR_FAILED";
+            } else {
+                response = "OK MONITOR_STARTED";
+            }
+        } else if (strcmp(line, "MONITOR STOP") == 0) {
+            monitor_stop(&monitoring);
+            response = "OK MONITOR_STOPPED";
         } else if (strcmp(line, "QUIT") == 0) {
+            monitor_stop(&monitoring);
             reply(fd, "OK BYE");
             break;
         } else {
@@ -336,6 +361,8 @@ static void *handle_client(void *argument)
         }
     }
 
+    /* Also stops monitoring after an unexpected disconnect. */
+    monitor_destroy(&monitoring);
     close(fd);
     return NULL;
 }

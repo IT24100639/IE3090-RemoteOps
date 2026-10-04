@@ -1,6 +1,7 @@
 #define _POSIX_C_SOURCE 200809L
 
 #include <arpa/inet.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,8 +17,7 @@
 static int upload_file(int fd, const char *name)
 {
     if (!valid_filename(name)) {
-        fprintf(stderr,
-                "Use a simple filename, for example: PUT sample.txt\n");
+        fprintf(stderr, "Use a simple filename: PUT sample.txt\n");
         return 0;
     }
 
@@ -70,7 +70,7 @@ static int upload_file(int fd, const char *name)
                      ? sizeof(buffer) : (size_t)remaining;
 
         if (fread(buffer, 1, chunk, file) != chunk) {
-            fprintf(stderr, "Could not read the complete upload file\n");
+            fprintf(stderr, "Could not read complete upload\n");
             fclose(file);
             return -1;
         }
@@ -88,7 +88,6 @@ static int upload_file(int fd, const char *name)
     return 1;
 }
 
-/* Receive exactly the payload size advertised in the GET response. */
 static int download_file(int fd, const char *response,
                          const char *requested_name)
 {
@@ -180,6 +179,70 @@ static int download_file(int fd, const char *response,
     return 0;
 }
 
+/* Bind before sending MONITOR START so the first datagram can arrive. */
+static int bind_monitor_socket(unsigned short port)
+{
+    int fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    if (fd == -1) {
+        perror("UDP socket");
+        return -1;
+    }
+
+    struct sockaddr_in address = {0};
+    address.sin_family = AF_INET;
+    address.sin_port = htons(port);
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if (bind(fd, (struct sockaddr *)&address,
+             sizeof(address)) == -1) {
+        perror("Bind UDP port");
+        close(fd);
+        return -1;
+    }
+
+    return fd;
+}
+
+/* Display only valid SYSINFO datagrams from the Agent's IP. */
+static void display_datagram(int fd, struct in_addr agent_address)
+{
+    char datagram[512];
+    struct sockaddr_in sender = {0};
+    socklen_t sender_length = sizeof(sender);
+
+    ssize_t length = recvfrom(
+        fd, datagram, sizeof(datagram) - 1, MSG_DONTWAIT,
+        (struct sockaddr *)&sender, &sender_length);
+
+    if (length <= 0 ||
+        sender.sin_family != AF_INET ||
+        sender.sin_addr.s_addr != agent_address.s_addr) {
+        return;
+    }
+
+    datagram[length] = '\0';
+
+    double cpu_load;
+    double memory_used;
+    long uptime;
+    char sid[32];
+    char extra;
+
+    if (sscanf(datagram, "SYSINFO %lf %lf %ld %31s %c",
+               &cpu_load, &memory_used, &uptime,
+               sid, &extra) != 4 ||
+        strncmp(datagram, "SYSINFO ", 8) != 0 ||
+        strcmp(sid, SID_TAG) != 0) {
+        return;
+    }
+
+    printf("\n[UDP] SYSINFO %.2f %.2f %ld %s\n",
+           cpu_load, memory_used, uptime, sid);
+    printf("remoteops> ");
+    fflush(stdout);
+}
+
 int main(int argc, char *argv[])
 {
     const char *agent_ip = "127.0.0.1";
@@ -192,6 +255,9 @@ int main(int argc, char *argv[])
     if (argc == 2) {
         agent_ip = argv[1];
     }
+
+    /* Avoid stdin read-ahead when polling for keyboard input. */
+    setvbuf(stdin, NULL, _IONBF, 0);
 
     if (mkdir("downloads", 0700) == -1 && errno != EEXIST) {
         perror("Create downloads directory");
@@ -232,18 +298,55 @@ int main(int argc, char *argv[])
 
     printf("Connected to Agent at %s:%d\n",
            agent_ip, DEFAULT_PORT);
-    printf("Authenticate first: AUTH %s\n", AUTH_TOKEN);
+    printf("Authenticate: AUTH %s\n", AUTH_TOKEN);
     printf("Upload: PUT filename\n");
     printf("Download: GET filename\n");
+    printf("Monitoring: MONITOR START 9639\n");
+    printf("Stop monitoring: MONITOR STOP\n");
 
     char command[MAX_LINE];
     char response[MAX_LINE];
     int authenticated = 0;
     int status = EXIT_SUCCESS;
+    int udp_fd = -1;
+    unsigned short current_udp_port = 0;
+
+    printf("remoteops> ");
+    fflush(stdout);
 
     for (;;) {
-        printf("remoteops> ");
-        fflush(stdout);
+        struct pollfd watched[3] = {
+            { .fd = STDIN_FILENO, .events = POLLIN },
+            { .fd = udp_fd, .events = POLLIN },
+            { .fd = fd, .events = POLLIN }
+        };
+
+        int ready = poll(watched, 3, -1);
+
+        if (ready == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+
+            perror("poll");
+            status = EXIT_FAILURE;
+            break;
+        }
+
+        if (watched[2].revents &
+            (POLLIN | POLLHUP | POLLERR | POLLNVAL)) {
+            fprintf(stderr, "\nAgent connection closed or unexpected data\n");
+            status = EXIT_FAILURE;
+            break;
+        }
+
+        if (udp_fd != -1 && (watched[1].revents & POLLIN)) {
+            display_datagram(udp_fd, address.sin_addr);
+        }
+
+        if (!(watched[0].revents & (POLLIN | POLLHUP))) {
+            continue;
+        }
 
         if (fgets(command, sizeof(command), stdin) == NULL) {
             break;
@@ -259,6 +362,8 @@ int main(int argc, char *argv[])
             }
 
             fprintf(stderr, "Command too long or missing newline\n");
+            printf("remoteops> ");
+            fflush(stdout);
             continue;
         }
 
@@ -269,18 +374,47 @@ int main(int argc, char *argv[])
         }
 
         int is_get = strncmp(command, "GET ", 4) == 0;
+        int is_start = strncmp(command, "MONITOR START ", 14) == 0;
+        int pending_udp_fd = -1;
+        unsigned short requested_port = 0;
+
+        if (is_start) {
+            unsigned long long port_value;
+
+            /* Invalid ports are sent to the Agent for its error reply. */
+            if (parse_file_size(command + 14, &port_value) == 0 &&
+                port_value >= 1 && port_value <= 65535) {
+                requested_port = (unsigned short)port_value;
+
+                if (udp_fd == -1 ||
+                    requested_port != current_udp_port) {
+                    pending_udp_fd =
+                        bind_monitor_socket(requested_port);
+
+                    if (pending_udp_fd == -1) {
+                        printf("remoteops> ");
+                        fflush(stdout);
+                        continue;
+                    }
+                }
+            }
+        }
 
         if (strncmp(command, "PUT ", 4) == 0) {
             if (!authenticated) {
                 fprintf(stderr,
                         "Authenticate before uploading: AUTH %s\n",
                         AUTH_TOKEN);
+                printf("remoteops> ");
+                fflush(stdout);
                 continue;
             }
 
             int result = upload_file(fd, command + 4);
 
             if (result == 0) {
+                printf("remoteops> ");
+                fflush(stdout);
                 continue;
             }
 
@@ -292,6 +426,11 @@ int main(int argc, char *argv[])
             if (send_all(fd, command, length) == -1 ||
                 send_all(fd, "\n", 1) == -1) {
                 perror("send");
+
+                if (pending_udp_fd != -1) {
+                    close(pending_udp_fd);
+                }
+
                 status = EXIT_FAILURE;
                 break;
             }
@@ -299,15 +438,54 @@ int main(int argc, char *argv[])
 
         if (recv_line(fd, response, sizeof(response)) != 1) {
             fprintf(stderr, "Connection closed or response failed\n");
+
+            if (pending_udp_fd != -1) {
+                close(pending_udp_fd);
+            }
+
             status = EXIT_FAILURE;
             break;
         }
 
         printf("%s\n", response);
 
+        if (is_start &&
+            strcmp(response, "OK MONITOR_STARTED " SID_TAG) == 0) {
+            if (pending_udp_fd != -1) {
+                if (udp_fd != -1) {
+                    close(udp_fd);
+                }
+
+                udp_fd = pending_udp_fd;
+                pending_udp_fd = -1;
+            }
+
+            current_udp_port = requested_port;
+        }
+
+        if (pending_udp_fd != -1) {
+            close(pending_udp_fd);
+        }
+
         if (strncmp(command, "AUTH ", 5) == 0) {
             authenticated =
                 strcmp(response, "OK AUTHENTICATED " SID_TAG) == 0;
+
+            if (!authenticated && udp_fd != -1) {
+                close(udp_fd);
+                udp_fd = -1;
+                current_udp_port = 0;
+            }
+        }
+
+        if (strcmp(command, "MONITOR STOP") == 0 &&
+            strcmp(response, "OK MONITOR_STOPPED " SID_TAG) == 0) {
+            if (udp_fd != -1) {
+                close(udp_fd);
+                udp_fd = -1;
+            }
+
+            current_udp_port = 0;
         }
 
         if (is_get &&
@@ -328,6 +506,13 @@ int main(int argc, char *argv[])
             status = EXIT_FAILURE;
             break;
         }
+
+        printf("remoteops> ");
+        fflush(stdout);
+    }
+
+    if (udp_fd != -1) {
+        close(udp_fd);
     }
 
     close(fd);

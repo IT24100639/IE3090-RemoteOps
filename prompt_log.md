@@ -117,3 +117,6 @@ Prompt: "dont tell like this , just give me the whole code every time. then i ca
 Context: Requested complete copy-paste code and clear terminal instructions while adding PUT and GET.
 AI assistance: Provided an exact-byte receive helper, file transfer handlers, complete Agent and Controller replacements, and testing instructions.
 Validation: Compiled without reported errors and tested authentication protection, upload, download, missing-file handling and QUIT. Verified matching SHA-256 hashes for all three file copies.
+
+## 2026-10-04 - UDP monitoring assistance
+Requested complete copy-and-paste code and step-by-step instructions for adding UDP monitoring to the Agent and Controller. AI assisted with the monitoring worker, UDP reception, and test instructions. I compiled the programs and checked the displayed monitoring updates, stop response, and subsequent TCP SYSINFO response.
