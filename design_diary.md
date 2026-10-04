@@ -90,3 +90,6 @@ Added a UDP monitoring worker for each TCP client session. The Agent sends SYSIN
 
 ## 2026-10-04 - Build automation
 Added Makefile_639 to compile both programs with C11, compiler warnings, optimisation, and pthread support. Ran the clean and build targets successfully. Running make again reported that both programs were up to date.
+
+## 2026-10-04 - Timestamped logging
+Added mutex-protected log entries with local timestamps, SID, client address, event, and details. Authentication tokens are redacted. Tested failed and successful authentication, SYSINFO, a 28-byte upload and download, and QUIT. The log recorded PUT_COMPLETE, GET_COMPLETE, and DISCONNECT.

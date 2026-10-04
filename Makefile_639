@@ -7,10 +7,10 @@ LDLIBS = -pthread
 
 all: agent_639 controller_639
 
-agent_639: agent_639.c remoteops_config.h remoteops_io.h remoteops_files.h remoteops_monitor.h
+agent_639: agent_639.c remoteops_config.h remoteops_io.h remoteops_files.h remoteops_monitor.h remoteops_log.h
 >$(CC) $(CFLAGS) agent_639.c -o agent_639 $(LDLIBS)
 
-controller_639: controller_639.c remoteops_config.h remoteops_io.h remoteops_files.h
+controller_639: controller_639.c remoteops_config.h remoteops_io.h remoteops_files.h remoteops_log.h
 >$(CC) $(CFLAGS) controller_639.c -o controller_639 $(LDLIBS)
 
 clean:

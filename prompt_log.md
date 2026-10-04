@@ -123,3 +123,6 @@ Requested complete copy-and-paste code and step-by-step instructions for adding 
 
 ## 2026-10-04 - Makefile assistance
 AI provided the complete Makefile_639 and commands to build both programs. I created the file and checked the clean, build, and up-to-date results in CentOS.
+
+## 2026-10-04 - Logging assistance
+AI provided the complete logging helper, updated Agent, file-transfer header, and Makefile. I compiled both programs and tested authentication, SYSINFO, upload, download, and disconnection. I checked the resulting timestamped log entries.
