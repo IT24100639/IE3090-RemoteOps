@@ -126,3 +126,22 @@ AI provided the complete Makefile_639 and commands to build both programs. I cre
 
 ## 2026-10-04 - Logging assistance
 AI provided the complete logging helper, updated Agent, file-transfer header, and Makefile. I compiled both programs and tested authentication, SYSINFO, upload, download, and disconnection. I checked the resulting timestamped log entries.
+
+## 2026-10-04 - File transfer robustness testing
+Tool: ChatGPT / Codex.
+
+Requests included:
+- "why do we need python?"
+- Guidance on testing oversized and interrupted uploads.
+- Checking screenshots of the test results and Git status.
+
+AI contribution:
+Explained why direct socket tests were needed to check the Agent
+independently of Controller-side validation. Generated the complete
+test_upload_errors.py script and commands to run it. Helped interpret
+the output and prepare this testing record.
+
+Validation:
+Ran the script on CentOS using Python 3.12.13 against the C Agent.
+The oversized-upload, interrupted-upload cleanup and subsequent
+SYSINFO checks all passed. Screenshot 17 records the output.

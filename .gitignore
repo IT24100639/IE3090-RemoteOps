@@ -7,6 +7,12 @@
 /agentfiles/
 /downloads/
 /sample.txt
+/binary_test.bin
+/empty_test.txt
 
 # Runtime log
 /remoteops_IT24100639.log
+
+# Python cache
+__pycache__/
+*.pyc

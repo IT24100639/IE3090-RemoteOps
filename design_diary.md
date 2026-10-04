@@ -93,3 +93,22 @@ Added Makefile_639 to compile both programs with C11, compiler warnings, optimis
 
 ## 2026-10-04 - Timestamped logging
 Added mutex-protected log entries with local timestamps, SID, client address, event, and details. Authentication tokens are redacted. Tested failed and successful authentication, SYSINFO, a 28-byte upload and download, and QUIT. The log recorded PUT_COMPLETE, GET_COMPLETE, and DISCONNECT.
+
+## 2026-10-04 - File transfer validation
+Tested a 65,536-byte binary file using PUT and GET. The original,
+Agent copy and downloaded copy had matching SHA-256 hashes.
+A zero-byte file also uploaded and downloaded successfully.
+
+The Agent rejected relative traversal and absolute-path GET requests
+with ERR 010 INVALID_FILE_REQUEST. A missing file returned
+ERR 005 FILE_NOT_FOUND, and SYSINFO still worked on the same connection.
+
+Used an AI-assisted Python socket test script to check requests that
+the Controller normally prevents. A PUT request declaring 104857601
+bytes returned ERR 004 FILE_TOO_LARGE and closed the connection without
+creating a file. An interrupted 8192-byte upload left no final file or
+new temporary upload file. A new authenticated connection successfully
+received SYSINFO afterward. All three scripted checks passed.
+
+Python is only a testing tool; the Agent and Controller remain C programs.
+Evidence: screenshots 14, 15, 16 and 17.
