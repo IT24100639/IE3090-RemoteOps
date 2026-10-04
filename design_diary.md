@@ -1,141 +1,60 @@
-# Design Diary
+# Design Diary - IT24100639
 
-## 2 October 2026 - Environment and project preparation
+## 2 October 2026 - Preparation
+Used my existing Windows laptop and CentOS 10 VirtualBox VM.
+SSH initially failed because the VM had no IPv4 address. Changing
+to NAT and forwarding host port 2222 to guest port 22 restored access.
+Checked GCC and Make, installed Git, and prepared the repository.
+Personalised settings are TCP port 9410, SID:9360 and token OPS-0639.
 
-I am using a Windows laptop with CentOS 10 in Oracle VirtualBox.
-I access CentOS through SSH from Windows Terminal.
+## 3 October 2026 - TCP and concurrency
+Implemented the Agent and Controller in C using BSD sockets.
+Selected one detached pthread per client so a waiting client does
+not block other sessions. Each session owns its authentication state.
+Five C Controllers connected simultaneously, authenticated and
+received BYE responses. Detached threads release resources on exit.
 
-Initially, SSH did not connect. The SSH service was running,
-but the CentOS network interface had no IPv4 address.
-I changed the VirtualBox network from Bridged Adapter to NAT
-and configured port forwarding from Windows port 2222 to
-CentOS port 22. The SSH connection then worked.
+Added SYSINFO using sysinfo() and LISTPROC using /proc/<pid>/comm.
+SYSINFO reports load average, used RAM and uptime; load is not a
+percentage. LISTPROC limits output to 20 readable processes and
+sanitises names to keep the response within one protocol line.
+Both commands were rejected before authentication and worked afterward.
 
-I checked GCC and Make, which were already installed.
-I installed Git and checked that nano was available.
-I created the project folder and my GitHub repository.
+## 4 October 2026 - Commands, transfers and monitoring
+Added exact EXEC handlers for DATE, UPTIME, DISKFREE, HOSTNAME and
+WHOAMI using C APIs. Avoiding a shell prevents command strings from
+being executed. Unknown commands, extra arguments and semicolons
+were rejected.
 
-I calculated my personalised settings:
-Registration number: IT24100639
-Agent port: 9410
-SID: 9360
-Authentication token: OPS-0639
+PUT and GET use newline headers followed by exact-length binary data.
+Send and receive loops handle partial socket operations. Selected
+4096-byte transfer chunks and a 100 MiB limit. Restricted filenames
+prevent path traversal. Temporary files are renamed after completion;
+interrupted uploads remove temporary files. Rejected PUT requests
+close the session to avoid interpreting unread payload as commands.
 
-My next step is to implement the TCP connection between
-the Agent and Controller.
+Added a monitoring worker per session, sending UDP statistics every
+two seconds to the TCP peer's requested port. A condition variable
+allows monitoring to stop promptly. Added a Makefile and mutex-protected
+timestamped logs for connections, commands and transfers. AUTH tokens
+are redacted.
 
-## Five-client concurrency test — 3 October 2026
+## 4 October 2026 - Validation
+Text, 65,536-byte binary and zero-byte transfers passed. Binary
+SHA-256 hashes matched across original, stored and downloaded files.
+Invalid paths and missing files returned errors. Direct Python socket
+tests confirmed oversized PUT rejection, interrupted-upload cleanup,
+split commands, combined commands and binary payload boundaries.
 
-I tested five Controller processes connected to the Agent at the same time.
-The ss command showed five established TCP connections on port 9410.
-All five Controllers received OK AUTHENTICATED SID:9360.
-After 180 seconds, each sent QUIT and received OK BYE SID:9360.
+Five connected test clients answered SYSINFO. Two monitoring sessions
+operated independently. STOP, QUIT and TCP disconnect stopped the
+affected session's UDP updates while other clients continued working.
+Screenshots 01-19 record feature and test evidence.
 
-The Agent uses one detached pthread per client. Each client has its own
-socket and authentication state, so waiting for one client's command
-does not stop the Agent from handling other clients.
-Detached threads release their thread resources when they finish.
-Screenshots were saved separately for the report.
-
-## SYSINFO implementation — 3 October 2026
-
-Added SYSINFO using Linux sysinfo().
-The response reports the one-minute load average, used RAM in MB,
-and uptime in seconds. Used RAM is total RAM minus free RAM,
-including memory used for caching. CPU load is not a percentage.
-
-Testing: SYSINFO before authentication returned ERR 003 AUTH_REQUIRED.
-After authentication, it returned OK SYSINFO 0.08 3443.56 12671 SID:9360.
-QUIT returned OK BYE SID:9360.
-Compilation completed without warnings using the selected GCC flags.
-
-## LISTPROC implementation — 3 October 2026
-
-Added an authenticated LISTPROC handler that reads process names
-from /proc/<pid>/comm. It returns a snapshot of up to 20 readable
-processes as comma-separated name/PID entries.
-
-The response is bounded to fit one protocol line with the SID.
-Special characters in names are replaced with underscores.
-Processes that exit before their files can be read are skipped.
-
-Testing: LISTPROC before authentication was rejected.
-After authentication, it returned 20 process entries with SID:9360.
-SYSINFO and QUIT still worked. Compilation produced no warnings.
-
-## EXEC implementation — 4 October 2026
-
-Added authenticated EXEC handlers for DATE, UPTIME, DISKFREE,
-HOSTNAME and WHOAMI using C system functions.
-Exact command names are required; extra arguments are rejected.
-No shell is invoked.
-
-DATE uses the Agent's local time. UPTIME reports seconds.
-DISKFREE reports space available to the Agent user on the project
-filesystem. HOSTNAME reports the system hostname. WHOAMI reports
-the Agent's effective user using a reentrant user lookup.
-
-Testing: EXEC before authentication was rejected.
-All five allowed commands returned OK EXEC_RESULT with SID:9360.
-EXEC LS, EXEC DATE extra and EXEC DATE;WHOAMI were rejected.
-SYSINFO and QUIT continued to work.
-
-## 2026-10-04 — TCP file transfers
-Implemented authenticated PUT and GET with newline-delimited headers and exact-length binary payloads. The Controller calculates upload sizes and saves downloads in ./downloads. Agent files are stored in ./agentfiles/IT24100639. Transfers use 4096-byte chunks with a 100 MiB limit. Simple filenames prevent path traversal. Temporary files are renamed after complete transfers; interrupted transfers remove temporary files. Rejected PUT requests close the session to prevent payload bytes being interpreted as commands.
-
-Tested unauthenticated GET, successful authentication, upload and download of a 44-byte text file, missing-file handling and QUIT. SHA-256 hashes matched for the original, Agent copy and downloaded copy.
-
-## 2026-10-04 - UDP monitoring
-Added a UDP monitoring worker for each TCP client session. The Agent sends SYSINFO datagrams every two seconds to the client's requested UDP port. The Controller displays these updates while accepting commands. Tested monitoring updates, MONITOR STOP, and a TCP SYSINFO command after stopping. The displayed responses included SID:9360.
-
-## 2026-10-04 - Build automation
-Added Makefile_639 to compile both programs with C11, compiler warnings, optimisation, and pthread support. Ran the clean and build targets successfully. Running make again reported that both programs were up to date.
-
-## 2026-10-04 - Timestamped logging
-Added mutex-protected log entries with local timestamps, SID, client address, event, and details. Authentication tokens are redacted. Tested failed and successful authentication, SYSINFO, a 28-byte upload and download, and QUIT. The log recorded PUT_COMPLETE, GET_COMPLETE, and DISCONNECT.
-
-## 2026-10-04 - File transfer validation
-Tested a 65,536-byte binary file using PUT and GET. The original,
-Agent copy and downloaded copy had matching SHA-256 hashes.
-A zero-byte file also uploaded and downloaded successfully.
-
-The Agent rejected relative traversal and absolute-path GET requests
-with ERR 010 INVALID_FILE_REQUEST. A missing file returned
-ERR 005 FILE_NOT_FOUND, and SYSINFO still worked on the same connection.
-
-Used an AI-assisted Python socket test script to check requests that
-the Controller normally prevents. A PUT request declaring 104857601
-bytes returned ERR 004 FILE_TOO_LARGE and closed the connection without
-creating a file. An interrupted 8192-byte upload left no final file or
-new temporary upload file. A new authenticated connection successfully
-received SYSINFO afterward. All three scripted checks passed.
-
-Python is only a testing tool; the Agent and Controller remain C programs.
-Evidence: screenshots 14, 15, 16 and 17.
-
-## 2026-10-04 - TCP stream framing tests
-Ran test_tcp_stream.py against the C Agent. AUTH and SYSINFO worked
-when their command text was split across separate sends. SYSINFO,
-EXEC WHOAMI and QUIT sent together produced separate ordered replies.
-
-An 8192-byte binary upload was sent together with its PUT header and
-a following SYSINFO command. The stored bytes matched the original.
-GET followed by SYSINFO and QUIT returned the correct file header,
-exact binary payload and separate command responses. All three tests
-passed. The script removed its own temporary test file afterward.
-Evidence: screenshot 18.
-
-## 2026-10-04 - Monitoring session isolation and cleanup
-Ran test_monitor_sessions.py with five authenticated TCP clients
-connected at the same time. Each client successfully received SYSINFO.
-Two sessions received valid UDP statistics on separate listener ports.
-
-MONITOR STOP stopped only the requesting session's monitoring, and
-its TCP connection still answered SYSINFO. Restarting monitoring and
-then sending QUIT stopped that session's UDP traffic while the other
-session continued. Closing the second TCP connection without QUIT
-also stopped its monitoring. The remaining three clients still worked.
-
-The script discarded queued UDP datagrams and checked for silence
-over three seconds, longer than the two-second monitoring interval.
-All checks passed. Evidence: screenshot 19.
+## 5 October 2026 - Documentation review
+Updated the README with build, run, protocol, testing and limitation
+details. Retained the longer diary in docs/development_history.md.
+ChatGPT/Codex supplied substantial code, testing and documentation
+assistance, recorded in prompt_log.md. I ran the builds and tests
+in CentOS and captured the observed results. Report preparation
+and final packaging remain to be completed.

@@ -162,3 +162,12 @@ instructions to test five connected clients, two independent UDP
 monitoring sessions, MONITOR STOP, QUIT and TCP disconnect cleanup.
 I ran the script against the C Agent on CentOS. All checks passed.
 Screenshot 19 records the results.
+
+## 2026-10-05 - Documentation review
+Tool: ChatGPT / Codex.
+During continuing step-by-step guidance, AI supplied a complete
+replacement README and a condensed design diary based on the
+development records and observed test results. The README describes
+build/run instructions, protocol, tests and implementation limitations.
+The earlier detailed diary was retained in docs/development_history.md.
+These documentation drafts were saved for review before submission.
