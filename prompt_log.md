@@ -1,173 +1,331 @@
-# AI Prompt Log
+# AI Prompt Log - IT24100639
+
+## Scope of assistance
+
+I used ChatGPT/Codex for assignment guidance, troubleshooting,
+substantial code drafts, test scripts and documentation drafts.
+I carried out the project steps in my CentOS environment, including
+updating files, compiling and running programs, executing tests,
+checking results, collecting evidence and maintaining Git commits.
+
+The entries below separate the AI support from my work and verification.
+The prompts below are summarised rather than quoted verbatim.
 
 ## 2 October 2026 - Assignment preparation
 
 Tool: ChatGPT
 
-Prompt:
-"what is this assignment? what i need to do? how long it will take to finish it?"
+Prompt summary:
+Requested an explanation of the assignment requirements and estimated completion time.
 
-Output used:
-ChatGPT explained the required features, deliverables,
-deadline, lab assessment and viva.
+Task:
+Identify the assignment requirements and deliverables.
 
-Checks:
-I used the assignment brief to identify the required work.
+AI support:
+Explained the required features, submission materials, deadline,
+lab assessment and viva.
 
-## 2 October 2026 - Step-by-step guidance
+My work and verification:
+Consulted the assignment brief and identified the work to complete.
+
+## 2 October 2026 - Environment and Git preparation
 
 Tool: ChatGPT
 
-Prompt:
-"step by step very clearly tell me how to do it.(how to connect ssh connection, how to do assignment... everything)"
+Prompt summary:
+Requested step-by-step guidance for SSH access and project preparation.
 
-Output used:
-I followed instructions to check my existing CentOS tools
-and prepare my project folder and Git repository.
+Task:
+Prepare the project using my existing Windows and CentOS environment.
 
-Changes:
-ChatGPT initially suggested a Mac and Kali setup.
-I clarified that I use Windows and CentOS 10.
+AI support:
+Provided commands for checking tools, creating the project directory
+and configuring Git. Initially suggested a different environment.
+
+My work and verification:
+Clarified that I use Windows and CentOS 10, checked the installed
+tools, prepared the project files and configured my Git repository.
 
 ## 2 October 2026 - SSH troubleshooting
 
 Tool: ChatGPT
 
-Prompt:
-"i couldnt connect ssh connection"
+Prompt summary:
+Requested troubleshooting assistance for a failed SSH connection.
 
-Output used:
-ChatGPT suggested checking the SSH service and network.
-After reviewing my screenshots, it suggested NAT with
-port forwarding from host port 2222 to guest port 22.
+Task:
+Restore SSH access to the CentOS VM.
 
-Checks:
-I ran the suggested commands and confirmed that SSH worked.
+AI support:
+Suggested checking the SSH service and network configuration,
+then using NAT with host port 2222 forwarded to guest port 22.
 
-## 2 October 2026 - Documentation assistance
+My work and verification:
+Checked the VM configuration, applied the network changes and
+confirmed that Windows Terminal could connect through SSH.
+
+## 2 October 2026 - Initial documentation
 
 Tool: ChatGPT
 
-Prompt:
-"i typed this code. after that what i need to do?"
+Prompt summary:
+Requested guidance on saving and checking the initial design diary.
 
-Output used:
-ChatGPT drafted an initial design diary entry and explained
-how to paste, save and check the file using nano and cat.
+Task:
+Record the environment preparation in the design diary.
 
-Checks or changes:
-I checked the entry against the steps I completed.
+AI support:
+Drafted an initial diary entry and explained how to save and
+inspect it using nano and cat.
 
-## Concurrency test guidance — 3 October 2026
+My work and verification:
+Saved the diary and checked its description against the steps
+I had completed.
 
-Prompt summary: Continue the assignment with clear step-by-step commands.
+## 2-3 October 2026 - TCP, authentication and concurrency
 
-AI assistance: Provided commands to launch five existing C Controllers
-in the background, authenticate each, keep connections open for 180
-seconds, inspect connections using ss, and read their saved output.
-Also helped interpret the screenshots and draft this diary entry.
+Tool: ChatGPT / Codex
 
-Validation: I ran the commands in CentOS. Five established connections,
-five successful authentication responses, and five BYE responses were
-observed.
+Prompt summary:
+Requested clear step-by-step instructions and complete code
+that could be copied into the project files.
 
-## SYSINFO code assistance — 3 October 2026
+Task:
+Establish communication between the C Agent and Controller,
+add authentication and support concurrent clients.
 
-User prompt: "can u give me the code fully , then i can copy paste directly and fully"
+AI support:
+Provided Agent, Controller and socket-helper code drafts,
+including threaded client handling and authentication.
+Provided commands to run five C Controllers simultaneously
+and inspect their connections and saved responses.
 
-AI assistance: Supplied the complete updated agent_639.c with a
-SYSINFO handler using Linux sysinfo(), retaining authentication
-and threaded client handling. Explained the returned values
-and provided compilation and testing instructions.
+My work and verification:
+Created and updated the files in CentOS, compiled and ran the
+programs, and tested authentication responses.
+Ran five Controllers, observed five established connections,
+and checked five successful authentication and BYE responses.
 
-Validation: I compiled and ran the supplied code in CentOS.
-Unauthenticated SYSINFO was rejected. Authenticated SYSINFO
-returned system statistics with SID:9360. QUIT succeeded.
+## 3 October 2026 - SYSINFO
 
-## LISTPROC code assistance — 3 October 2026
+Tool: ChatGPT / Codex
 
-Prompt context: Continue the assignment using complete code
-that can be copied and pasted.
+Prompt summary:
+Requested an updated code draft and guidance for implementing and testing SYSINFO.
 
-AI assistance: Supplied the complete updated Agent code with
-a LISTPROC handler reading /proc, a 20-process snapshot limit,
-bounded response construction, and process-name sanitisation.
-Provided compilation and authentication test instructions.
+Task:
+Add system statistics to the Agent.
 
-Validation: I compiled and ran the code in CentOS.
-LISTPROC was rejected before authentication and returned process
-names/PIDs after authentication. SYSINFO and QUIT also succeeded.
+AI support:
+Provided an updated Agent code draft using Linux sysinfo(),
+with explanations of the values and test instructions.
 
-## EXEC code assistance — 4 October 2026
+My work and verification:
+Updated the project file, compiled and ran the programs,
+and tested SYSINFO before and after authentication.
+Checked that authenticated responses included statistics
+and SID:9360, and that QUIT still worked.
 
-User prompt: "tell me very clearly. give me the whole code to copy paste"
+## 3 October 2026 - LISTPROC
 
-AI assistance: Supplied complete Agent code containing the existing
-features and five allowlisted EXEC handlers implemented through C
-system functions. Provided instructions for compilation, running
-the Agent and Controller in separate SSH tabs, and testing.
+Tool: ChatGPT / Codex
 
-Validation: I ran the code in CentOS. All five allowed commands
-succeeded after authentication. Unauthenticated EXEC, unknown
-commands, extra arguments and a semicolon command were rejected.
-SYSINFO and QUIT also succeeded.
+Prompt summary:
+Requested complete updated code and instructions for the next feature.
 
-## 2026-10-04 — File transfer implementation
-Prompt: "dont tell like this , just give me the whole code every time. then i can copy paste it . and tell me where i need to paste it"
-Context: Requested complete copy-paste code and clear terminal instructions while adding PUT and GET.
-AI assistance: Provided an exact-byte receive helper, file transfer handlers, complete Agent and Controller replacements, and testing instructions.
-Validation: Compiled without reported errors and tested authentication protection, upload, download, missing-file handling and QUIT. Verified matching SHA-256 hashes for all three file copies.
+Task:
+Return a snapshot of process names and PIDs.
 
-## 2026-10-04 - UDP monitoring assistance
-Requested complete copy-and-paste code and step-by-step instructions for adding UDP monitoring to the Agent and Controller. AI assisted with the monitoring worker, UDP reception, and test instructions. I compiled the programs and checked the displayed monitoring updates, stop response, and subsequent TCP SYSINFO response.
+AI support:
+Provided an updated Agent code draft reading /proc, with a
+20-process limit, bounded output and process-name sanitisation.
 
-## 2026-10-04 - Makefile assistance
-AI provided the complete Makefile_639 and commands to build both programs. I created the file and checked the clean, build, and up-to-date results in CentOS.
+My work and verification:
+Updated and compiled the Agent, tested LISTPROC before and
+after authentication, and checked the returned process entries.
+Also checked SYSINFO and QUIT.
 
-## 2026-10-04 - Logging assistance
-AI provided the complete logging helper, updated Agent, file-transfer header, and Makefile. I compiled both programs and tested authentication, SYSINFO, upload, download, and disconnection. I checked the resulting timestamped log entries.
+## 4 October 2026 - EXEC commands
 
-## 2026-10-04 - File transfer robustness testing
-Tool: ChatGPT / Codex.
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested an updated code draft and instructions for implementing and testing EXEC commands.
+
+Task:
+Support the five allowed EXEC commands.
+
+AI support:
+Provided an updated Agent code draft implementing DATE, UPTIME,
+DISKFREE, HOSTNAME and WHOAMI through C APIs, plus test commands.
+
+My work and verification:
+Updated, compiled and ran the programs in separate SSH terminals.
+Tested all five allowed commands and checked their responses.
+Tested unauthenticated requests, unknown commands, extra arguments
+and a semicolon command, and checked that they were rejected.
+
+## 4 October 2026 - PUT and GET
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested updated Agent and Controller code drafts and instructions for adding PUT and GET.
+
+Task:
+Add binary file uploads and downloads.
+
+AI support:
+Provided updated Agent and Controller code drafts, file-transfer
+handlers and an exact-byte receive helper, with testing instructions.
+
+My work and verification:
+Updated the project files and compiled the programs.
+Tested authentication protection, upload, download, missing files
+and QUIT. Compared SHA-256 hashes of the original, stored and
+downloaded copies and confirmed that they matched.
+
+## 4 October 2026 - UDP monitoring
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested complete code and step-by-step monitoring instructions.
+
+Task:
+Receive periodic system statistics through UDP.
+
+AI support:
+Provided monitoring-worker and Controller reception code drafts,
+along with commands for checking monitoring behaviour.
+
+My work and verification:
+Updated and compiled the programs, started monitoring and
+checked the displayed UDP statistics and SID.
+Stopped monitoring and checked that TCP SYSINFO still worked.
+
+## 4 October 2026 - Build automation
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested guidance for adding the personalised Makefile.
+
+Task:
+Build both C programs consistently.
+
+AI support:
+Provided a Makefile_639 draft and build commands.
+
+My work and verification:
+Created the Makefile and ran clean and build targets.
+Checked that both programs compiled and that another make
+invocation reported them as up to date.
+
+## 4 October 2026 - Timestamped logging
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested code and instructions for adding logging.
+
+Task:
+Record connection, command, transfer and disconnection events.
+
+AI support:
+Provided logging-helper code and updates to the Agent,
+file-transfer header and Makefile.
+
+My work and verification:
+Updated and compiled the project. Tested failed and successful
+authentication, SYSINFO, upload, download and QUIT.
+Inspected the log for timestamps, SID, transfer completion,
+disconnection events and authentication-token redaction.
+
+## 4 October 2026 - File-transfer validation
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested an explanation of Python socket tests for validating the C Agent.
+
+Other requests, summarised:
+Asked for oversized and interrupted-upload testing guidance
+and interpretation of test results.
+
+Task:
+Check binary transfers, invalid requests and upload cleanup.
+
+AI support:
+Explained direct socket testing and generated
+test_upload_errors.py with execution instructions.
+
+My work and verification:
+Tested a 65,536-byte binary file and a zero-byte file.
+Compared file hashes and checked invalid-path and missing-file
+responses. Ran the Python script against the C Agent.
+Oversized-upload rejection, interrupted-upload cleanup and
+subsequent SYSINFO checks passed.
+Screenshots 14-17 record the evidence.
+
+## 4 October 2026 - TCP stream framing
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested further checks of TCP command and payload handling.
+
+Task:
+Check split commands, combined commands and file boundaries.
+
+AI support:
+Generated test_tcp_stream.py and instructions for running it.
+
+My work and verification:
+Ran the script against the C Agent in CentOS.
+All three checks passed, covering split command text,
+multiple commands sent together and binary payload boundaries.
+Screenshot 18 records the results.
+
+## 4 October 2026 - Monitoring session isolation
+
+Tool: ChatGPT / Codex
+
+Prompt summary:
+Requested testing of concurrent monitoring sessions and cleanup.
+
+Task:
+Check that stopping one monitoring session does not affect another.
+
+AI support:
+Generated test_monitor_sessions.py and execution instructions.
+
+My work and verification:
+Ran the script with five authenticated TCP clients and two
+UDP monitoring sessions. Checked session independence and
+cleanup after MONITOR STOP, QUIT and TCP disconnection.
+All checks passed. Screenshot 19 records the results.
+
+## 5 October 2026 - Documentation and evidence review
+
+Tool: ChatGPT / Codex
 
 Requests included:
-- "why do we need python?"
-- Guidance on testing oversized and interrupted uploads.
-- Checking screenshots of the test results and Git status.
+- Reviewing README, design diary and prompt log text.
+- Guidance on capturing code and execution screenshots.
+- Revising the prompt log to describe both AI support and my work.
 
-AI contribution:
-Explained why direct socket tests were needed to check the Agent
-independently of Controller-side validation. Generated the complete
-test_upload_errors.py script and commands to run it. Helped interpret
-the output and prepare this testing record.
+Task:
+Prepare accurate documentation and submission evidence.
 
-Validation:
-Ran the script on CentOS using Python 3.12.13 against the C Agent.
-The oversized-upload, interrupted-upload cleanup and subsequent
-SYSINFO checks all passed. Screenshot 17 records the output.
+AI support:
+Drafted README and diary updates from the development records
+and test results, reviewed pasted documentation, and identified
+source sections to capture. Drafted this revised prompt log.
 
-## 2026-10-04 - TCP stream test script
-Tool: ChatGPT / Codex.
-AI generated the complete test_tcp_stream.py script and execution
-instructions as part of the continuing assignment guidance.
-The script tests split commands, multiple commands in one send,
-and binary file payload boundaries with subsequent commands.
-I ran it against the C Agent on CentOS. All three checks passed,
-and the output was captured in screenshot 18.
-
-## 2026-10-04 - Monitoring session tests
-Tool: ChatGPT / Codex.
-AI generated the complete test_monitor_sessions.py script and
-instructions to test five connected clients, two independent UDP
-monitoring sessions, MONITOR STOP, QUIT and TCP disconnect cleanup.
-I ran the script against the C Agent on CentOS. All checks passed.
-Screenshot 19 records the results.
-
-## 2026-10-05 - Documentation review
-Tool: ChatGPT / Codex.
-During continuing step-by-step guidance, AI supplied a complete
-replacement README and a condensed design diary based on the
-development records and observed test results. The README describes
-build/run instructions, protocol, tests and implementation limitations.
-The earlier detailed diary was retained in docs/development_history.md.
-These documentation drafts were saved for review before submission.
+My work and verification:
+Saved and inspected the documents, retained the longer diary
+in docs/development_history.md, captured code screenshots,
+and ran the final clean build without warnings or errors.
+Captured Agent startup and storage/log evidence.
+Report preparation, reflection and final packaging are still pending.
